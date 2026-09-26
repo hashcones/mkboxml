@@ -4,24 +4,15 @@ on:
   push:
     branches: [ "main", "master" ]
   workflow_dispatch:
-    inputs:
-      algorithm:
-        description: 'Key Algorithm'
-        required: true
-        default: 'ecdsa'
-        type: choice
-        options:
-        - ecdsa
-        - rsa
-      keymint_version:
-        description: 'KeyMint Version'
-        required: true
-        default: '4'
-        type: string
+  # This tells GitHub to run the workflow automatically every day
+  schedule:
+    - cron: '0 16 * * *' # Triggers every day at 16:00 UTC (Adjust as needed)
 
 jobs:
   build-keybox:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Crucial: Allows the runner to save the file back to the repository
 
     steps:
     - name: Checkout repository code
@@ -33,11 +24,6 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
         cache-dependency-path: 'requirements.txt'
-   
-    - name: Install system dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y openssl libxml2-dev libxslt-dev
 
     - name: Install Python modules
       run: |
@@ -46,27 +32,13 @@ jobs:
 
     - name: Execute Keybox generation pipeline
       run: |
-        # Use fallback environment variables if triggered by a push event
-        ALGO="${{ github.event.inputs.algorithm || 'ecdsa' }}"
-        KEYMINT="${{ github.event.inputs.keymint_version || '4' }}"
-        
-        echo "Generating keybox with parameters: Algo=$ALGO, KeyMint=$KEYMINT, Style=RKP"
-        
-        # Replace main.py with your repository's entry point script
-        if [ -f "main.py" ]; then
-          python main.py --algo "$ALGO" --keymint "$KEYMINT" --rkp
-        elif [ -f "generate.py" ]; then
-          python generate.py --algo "$ALGO" --keymint "$KEYMINT" --rkp
-        else
-          echo "Error: Keybox generation script not found in root directory."
-          exit 1
-        fi
+        python generate.py
 
-    - name: Upload generated keybox artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: android-keybox
-        path: |
-          **/keybox.xml
-          **/output/
-        if-no-files-found: warn
+    - name: Commit and Push compiled keybox back to repo
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "41898282+github-actions[bot]@://github.com"
+        git add keybox.xml
+        # Force a commit by updating a timestamp or flag if keys rotate daily
+        git commit -m "Automated Daily RKP KeyMint v4 Build" --allow-empty
+        git push
