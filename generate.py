@@ -23,14 +23,14 @@ class AuthorizationList(univ.Sequence):
 
 class KeyDescription(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedAttribute('attestationVersion', univ.Integer()),
-        namedtype.NamedAttribute('attestationSecurityLevel', univ.Enumerated()),
-        namedtype.NamedAttribute('keymasterVersion', univ.Integer()),
-        namedtype.NamedAttribute('keymasterSecurityLevel', univ.Enumerated()),
-        namedtype.NamedAttribute('attestationChallenge', univ.OctetString()),
-        namedtype.NamedAttribute('uniqueId', univ.OctetString()),
-        namedtype.NamedAttribute('softwareEnforced', AuthorizationList()),
-        namedtype.NamedAttribute('teeEnforced', AuthorizationList())
+        namedtype.NamedType('attestationVersion', univ.Integer()),
+        namedtype.NamedType('attestationSecurityLevel', univ.Enumerated()),
+        namedtype.NamedType('keymasterVersion', univ.Integer()),
+        namedtype.NamedType('keymasterSecurityLevel', univ.Enumerated()),
+        namedtype.NamedType('attestationChallenge', univ.OctetString()),
+        namedtype.NamedType('uniqueId', univ.OctetString()),
+        namedtype.NamedType('softwareEnforced', AuthorizationList()),
+        namedtype.NamedType('teeEnforced', AuthorizationList())
     )
 
 def encode_attestation_extension():
