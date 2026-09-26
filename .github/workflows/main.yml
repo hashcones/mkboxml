@@ -2,43 +2,61 @@ name: Generate Android Keybox
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: ["main", "master"]
   workflow_dispatch:
-  # This tells GitHub to run the workflow automatically every day
   schedule:
-    - cron: '0 16 * * *' # Triggers every day at 16:00 UTC (Adjust as needed)
+    - cron: '0 16 * * *'
 
 jobs:
   build-keybox:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Crucial: Allows the runner to save the file back to the repository
+      contents: read
+      pages: write
+      id-token: write
 
     steps:
-    - name: Checkout repository code
-      uses: actions/checkout@v4
+      - name: Checkout repository code
+        uses: actions/checkout@v4
 
-    - name: Set up Python environment
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        cache-dependency-path: 'requirements.txt'
+      - name: Set up Python environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'requirements.txt'
 
-    - name: Install Python modules
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install Python modules
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Execute Keybox generation pipeline
-      run: |
-        python generate.py
+      - name: Execute Keybox generation pipeline
+        run: |
+          python generate.py
 
-    - name: Commit and Push compiled keybox back to repo
-      run: |
-        git config --global user.name "github-actions[bot]"
-        git config --global user.email "41898282+github-actions[bot]@://github.com"
-        git add keybox.xml
-        # Force a commit by updating a timestamp or flag if keys rotate daily
-        git commit -m "Automated Daily RKP KeyMint v4 Build" --allow-empty
-        git push
+      - name: Prepare GitHub Pages root
+        run: |
+          mkdir -p site
+          cp keybox.xml site/
+
+      - name: Upload artifact to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    needs: build-keybox
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        
