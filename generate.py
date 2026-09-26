@@ -34,16 +34,25 @@ class KeyDescription(univ.Sequence):
     )
 
 def encode_attestation_extension():
-    """Encodes the KeyMint v4 and September 2026 patch level properties into ASN.1 bytes"""
+    """Converts the patch date into an aligned integer structure that maps correctly"""
+    # Define your precise target patch date (Format: YYYYMM)
+    target_year = 2026
+    target_month = 7
+    
+    # Calculate bitwise shifts matching Android Keystore specifications
+    # (Year << 6) | Month
+    encoded_patch_value = (target_year << 6) | target_month
+    
+    print(f"[*] Compiling bit-shifted Patch Value: {encoded_patch_value} (Maps to {target_year}-{target_month:02d})")
+
     auth_list = AuthorizationList()
-    # Fixes the yellow banner by setting patch level to 2026-09 (Format: YYYYMM)
-    auth_list.setComponentByName('osPatchLevel', 202609)
-    auth_list.setComponentByName('vendorPatchLevel', 202609)
+    auth_list.setComponentByName('osPatchLevel', encoded_patch_value)
+    auth_list.setComponentByName('vendorPatchLevel', encoded_patch_value)
 
     key_desc = KeyDescription()
-    key_desc.setComponentByName('attestationVersion', 4)  # Attestation Version 4
-    key_desc.setComponentByName('attestationSecurityLevel', 1)  # StrongBox / TEE
-    key_desc.setComponentByName('keymasterVersion', 400)  # KeyMint v4
+    key_desc.setComponentByName('attestationVersion', 4)
+    key_desc.setComponentByName('attestationSecurityLevel', 1) 
+    key_desc.setComponentByName('keymasterVersion', 400) 
     key_desc.setComponentByName('keymasterSecurityLevel', 1)
     key_desc.setComponentByName('attestationChallenge', b'MOCK_CHALLENGE')
     key_desc.setComponentByName('uniqueId', b'')
@@ -102,7 +111,7 @@ def generate_mock_rkp_chain():
 def build_keybox_xml(priv_pem, certs_pem, filename="keybox.xml"):
     root = ET.Element("AndroidAttestation")
     ET.SubElement(root, "NumberOfKeyboxes").text = "1"
-    keybox = ET.SubElement(root, "Keybox", DeviceID="MOCK_RKP_KEYMINT_V4")
+    keybox = ET.SubElement(root, "Keybox", DeviceID="Xiaomi")
     key_node = ET.SubElement(keybox, "Key", algorithm="ecdsa")
     
     ET.SubElement(key_node, "Private").text = f"\n{priv_pem.strip()}\n"
