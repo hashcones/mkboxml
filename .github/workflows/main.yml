@@ -1,0 +1,71 @@
+name: Generate Android Keybox
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      algorithm:
+        description: 'Key Algorithm'
+        required: true
+        default: 'ecdsa'
+        type: choice
+        options:
+        - ecdsa
+        - rsa
+      keymint_version:
+        description: 'KeyMint Version'
+        required: true
+        default: '4'
+        type: string
+
+jobs:
+  build-keybox:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y openssl libxml2-dev libxslt-dev
+
+    - name: Install Python modules
+      run: |
+        python -m pip install --upgrade pip
+        pip install cryptography pyasn1 lxml requests
+
+    - name: Execute Keybox generation pipeline
+      run: |
+        # Use fallback environment variables if triggered by a push event
+        ALGO="${{ github.event.inputs.algorithm || 'ecdsa' }}"
+        KEYMINT="${{ github.event.inputs.keymint_version || '4' }}"
+        
+        echo "Generating keybox with parameters: Algo=$ALGO, KeyMint=$KEYMINT, Style=RKP"
+        
+        # Replace main.py with your repository's entry point script
+        if [ -f "main.py" ]; then
+          python main.py --algo "$ALGO" --keymint "$KEYMINT" --rkp
+        elif [ -f "generate.py" ]; then
+          python generate.py --algo "$ALGO" --keymint "$KEYMINT" --rkp
+        else
+          echo "Error: Keybox generation script not found in root directory."
+          exit 1
+        fi
+
+    - name: Upload generated keybox artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-keybox
+        path: |
+          **/keybox.xml
+          **/output/
+        if-no-files-found: warn
